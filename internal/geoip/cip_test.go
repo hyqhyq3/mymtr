@@ -26,3 +26,17 @@ func TestParseCIP_WithISP(t *testing.T) {
 		t.Fatalf("unexpected isp: %#v", loc)
 	}
 }
+
+func TestParseCIP_CN(t *testing.T) {
+	in := "IP\t: 59.111.160.244\n地址\t: 中国 浙江 杭州\n运营商\t: 网易\n"
+	loc, err := parseCIP(in)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if loc.Country != "中国" || loc.Province != "浙江" || loc.City != "杭州" || loc.ISP != "网易" {
+		t.Fatalf("unexpected location: %#v", loc)
+	}
+	if got := loc.String(); got != "中国 浙江 杭州 网易" {
+		t.Fatalf("unexpected string: %q", got)
+	}
+}
