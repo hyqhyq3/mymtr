@@ -27,7 +27,8 @@ var (
 		"https://github.com/lionsoul2014/ip2region/releases/latest/download/ip2region_v4.xdb",
 		"https://raw.githubusercontent.com/lionsoul2014/ip2region/master/data/ip2region_v4.xdb",
 	}
-	ip2RegionHTTPClient = &http.Client{Timeout: 30 * time.Second}
+	ip2RegionHTTPClient           = &http.Client{Timeout: 30 * time.Second}
+	progressOutput      io.Writer = os.Stderr
 )
 
 type IP2RegionResolver struct {
@@ -178,21 +179,103 @@ func downloadFromSource(ctx context.Context, src, tmp, target string) error {
 		return err
 	}
 
-	if _, err := io.Copy(out, resp.Body); err != nil {
+	pr := newProgressReporter(src, resp.ContentLength, progressOutput)
+	reader := io.TeeReader(resp.Body, pr)
+
+	if _, err := io.Copy(out, reader); err != nil {
+		pr.finish(err)
 		out.Close()
 		os.Remove(tmp)
 		return err
 	}
 	if err := out.Close(); err != nil {
+		pr.finish(err)
 		os.Remove(tmp)
 		return err
 	}
 
 	if err := os.Rename(tmp, target); err != nil {
+		pr.finish(err)
 		os.Remove(tmp)
 		return err
 	}
+	pr.finish(nil)
 	return nil
+}
+
+type progressReporter struct {
+	source     string
+	total      int64
+	current    int64
+	writer     io.Writer
+	start      time.Time
+	lastUpdate time.Time
+	done       bool
+}
+
+func newProgressReporter(source string, total int64, w io.Writer) *progressReporter {
+	return &progressReporter{
+		source:     source,
+		total:      total,
+		writer:     w,
+		start:      time.Now(),
+		lastUpdate: time.Time{},
+	}
+}
+
+func (p *progressReporter) Write(b []byte) (int, error) {
+	if p.writer == nil {
+		return len(b), nil
+	}
+	p.current += int64(len(b))
+	p.report(false)
+	return len(b), nil
+}
+
+func (p *progressReporter) finish(err error) {
+	if p.writer == nil || p.done {
+		return
+	}
+	p.done = true
+	p.report(true)
+	if err == nil {
+		fmt.Fprintln(p.writer)
+	} else {
+		fmt.Fprintln(p.writer, " (failed)")
+	}
+}
+
+func (p *progressReporter) report(force bool) {
+	if p.writer == nil {
+		return
+	}
+	if !force && time.Since(p.lastUpdate) < 200*time.Millisecond {
+		return
+	}
+	p.lastUpdate = time.Now()
+
+	var status string
+	if p.total > 0 {
+		percent := float64(p.current) / float64(p.total) * 100
+		status = fmt.Sprintf("%.1f%% (%s/%s)", percent, humanBytes(p.current), humanBytes(p.total))
+	} else {
+		status = fmt.Sprintf("%s downloaded", humanBytes(p.current))
+	}
+	fmt.Fprintf(p.writer, "\r下载 ip2region：%s [%s]", p.source, status)
+}
+
+func humanBytes(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%dB", n)
+	}
+	div, exp := int64(unit), 0
+	for n/div >= unit && exp < 5 {
+		div *= unit
+		exp++
+	}
+	value := float64(n) / float64(div)
+	return fmt.Sprintf("%.1f%ciB", value, "KMGTPE"[exp])
 }
 
 func detectIPVersion(dbPath string) (*xdb.Version, error) {

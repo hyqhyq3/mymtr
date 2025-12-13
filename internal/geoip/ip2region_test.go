@@ -2,6 +2,7 @@ package geoip
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,6 +22,10 @@ func TestParseIP2Region(t *testing.T) {
 
 func TestDownloadIP2RegionDBWithCustomURL(t *testing.T) {
 	t.Parallel()
+
+	origWriter := progressOutput
+	progressOutput = io.Discard
+	t.Cleanup(func() { progressOutput = origWriter })
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "fake-xdb-content")
@@ -44,6 +49,10 @@ func TestDownloadIP2RegionDBWithCustomURL(t *testing.T) {
 
 func TestDownloadIP2RegionDBFallback(t *testing.T) {
 	t.Parallel()
+
+	origWriter := progressOutput
+	progressOutput = io.Discard
+	t.Cleanup(func() { progressOutput = origWriter })
 
 	failSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
