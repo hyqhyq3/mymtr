@@ -11,7 +11,7 @@ import (
 )
 
 type IP2RegionResolver struct {
-	dbPath  string
+	dbPath   string
 	searcher *xdb.Searcher
 }
 
@@ -20,10 +20,20 @@ func NewIP2RegionResolver(dbPath string) (*IP2RegionResolver, error) {
 	if dbPath == "" {
 		return nil, errors.New("ip2region db 路径为空（请设置 --ip2region-db）")
 	}
-	if _, err := os.Stat(dbPath); err != nil {
+	fileInfo, err := os.Stat(dbPath)
+	if err != nil {
 		return nil, fmt.Errorf("ip2region db 不可用：%w", err)
 	}
-	searcher, err := xdb.NewWithFileOnly(dbPath)
+	if fileInfo.IsDir() {
+		return nil, fmt.Errorf("ip2region db 路径应为文件：%s", dbPath)
+	}
+
+	version, err := detectIPVersion(dbPath)
+	if err != nil {
+		return nil, err
+	}
+
+	searcher, err := xdb.NewWithFileOnly(version, dbPath)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +46,9 @@ func (r *IP2RegionResolver) Close() error {
 	if r.searcher == nil {
 		return nil
 	}
-	return r.searcher.Close()
+	r.searcher.Close()
+	r.searcher = nil
+	return nil
 }
 
 func (r *IP2RegionResolver) Resolve(ip net.IP) *GeoLocation {
@@ -60,6 +72,29 @@ func (r *IP2RegionResolver) Resolve(ip net.IP) *GeoLocation {
 	loc.Source = r.Source()
 	loc.Raw = region
 	return loc
+}
+
+func detectIPVersion(dbPath string) (*xdb.Version, error) {
+	handle, err := os.Open(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("打开 ip2region db 失败：%w", err)
+	}
+	defer handle.Close()
+
+	if err := xdb.Verify(handle); err != nil {
+		return nil, fmt.Errorf("ip2region db 校验失败：%w", err)
+	}
+
+	header, err := xdb.LoadHeader(handle)
+	if err != nil {
+		return nil, fmt.Errorf("读取 ip2region header 失败：%w", err)
+	}
+
+	version, err := xdb.VersionFromHeader(header)
+	if err != nil {
+		return nil, fmt.Errorf("解析 ip2region 版本失败：%w", err)
+	}
+	return version, nil
 }
 
 // region 格式通常为：国家|区域|省份|城市|ISP（未知项可能为 0）
@@ -90,4 +125,3 @@ func normalizeIP2R(s string) string {
 	}
 	return s
 }
-

@@ -11,4 +11,3 @@ func TestParseIP2Region(t *testing.T) {
 		t.Fatalf("unexpected: %#v", loc)
 	}
 }
-
