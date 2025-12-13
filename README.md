@@ -12,7 +12,36 @@
 
 更多设计背景与模块说明见 `docs/architecture.md`、`docs/api-design.md`、`docs/technical-design.md`。
 
-## 快速开始
+## 安装
+
+### 一键安装（推荐）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hyqhyq3/mymtr/main/install.sh | bash
+```
+
+自定义安装目录：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hyqhyq3/mymtr/main/install.sh | INSTALL_DIR=~/.local/bin bash
+```
+
+安装指定版本：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hyqhyq3/mymtr/main/install.sh | VERSION=v0.1.0 bash
+```
+
+### 从 Release 下载
+
+访问 [Releases](https://github.com/hyqhyq3/mymtr/releases) 页面下载对应平台的预编译二进制文件。
+
+支持的平台：
+- Linux (amd64, arm64)
+- macOS (amd64, arm64)
+- Windows (amd64, arm64)
+
+### 从源码构建
 
 ```bash
 git clone https://github.com/hyqhyq3/mymtr.git
