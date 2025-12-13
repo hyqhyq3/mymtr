@@ -10,13 +10,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 )
 
 const (
-	ip2RegionDownloadTimeout  = 2 * time.Minute
+	ip2RegionIdleTimeout      = 30 * time.Second
 	ip2RegionDefaultUserAgent = "mymtr/geoip-downloader"
 	ip2RegionURLEnv           = "MYMTR_IP2REGION_URL"
 )
@@ -27,7 +28,7 @@ var (
 		"https://github.com/lionsoul2014/ip2region/releases/latest/download/ip2region_v4.xdb",
 		"https://raw.githubusercontent.com/lionsoul2014/ip2region/master/data/ip2region_v4.xdb",
 	}
-	ip2RegionHTTPClient           = &http.Client{Timeout: 30 * time.Second}
+	ip2RegionHTTPClient           = &http.Client{}
 	progressOutput      io.Writer = os.Stderr
 )
 
@@ -124,14 +125,13 @@ func downloadIP2RegionDB(dbPath, customURL string) error {
 	sources := selectIP2RegionSources(customURL)
 	var errs []error
 
+	baseCtx := context.Background()
 	for _, src := range sources {
 		if err := os.Remove(tmp); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), ip2RegionDownloadTimeout)
-		err := downloadFromSource(ctx, src, tmp, dbPath)
-		cancel()
+		err := downloadFromSource(baseCtx, src, tmp, dbPath)
 
 		if err == nil {
 			return nil
@@ -156,7 +156,10 @@ func selectIP2RegionSources(customURL string) []string {
 	return ip2RegionDownloadSources
 }
 
-func downloadFromSource(ctx context.Context, src, tmp, target string) error {
+func downloadFromSource(parent context.Context, src, tmp, target string) error {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, src, nil)
 	if err != nil {
 		return err
@@ -179,7 +182,8 @@ func downloadFromSource(ctx context.Context, src, tmp, target string) error {
 		return err
 	}
 
-	pr := newProgressReporter(src, resp.ContentLength, progressOutput)
+	pr := newProgressReporter(src, resp.ContentLength, progressOutput, ip2RegionIdleTimeout)
+	pr.startIdleWatch(cancel)
 	reader := io.TeeReader(resp.Body, pr)
 
 	if _, err := io.Copy(out, reader); err != nil {
@@ -204,22 +208,65 @@ func downloadFromSource(ctx context.Context, src, tmp, target string) error {
 }
 
 type progressReporter struct {
-	source     string
-	total      int64
-	current    int64
-	writer     io.Writer
-	start      time.Time
-	lastUpdate time.Time
-	done       bool
+	source      string
+	total       int64
+	current     int64
+	writer      io.Writer
+	start       time.Time
+	lastUpdate  time.Time
+	idleTimeout time.Duration
+	idleReset   chan struct{}
+	doneCh      chan struct{}
+	doneOnce    sync.Once
 }
 
-func newProgressReporter(source string, total int64, w io.Writer) *progressReporter {
+func newProgressReporter(source string, total int64, w io.Writer, idleTimeout time.Duration) *progressReporter {
 	return &progressReporter{
-		source:     source,
-		total:      total,
-		writer:     w,
-		start:      time.Now(),
-		lastUpdate: time.Time{},
+		source:      source,
+		total:       total,
+		writer:      w,
+		start:       time.Now(),
+		lastUpdate:  time.Time{},
+		idleTimeout: idleTimeout,
+		idleReset:   make(chan struct{}, 1),
+		doneCh:      make(chan struct{}),
+	}
+}
+
+func (p *progressReporter) startIdleWatch(cancel context.CancelFunc) {
+	if p.writer == nil || p.idleTimeout <= 0 {
+		return
+	}
+	go func() {
+		timer := time.NewTimer(p.idleTimeout)
+		defer timer.Stop()
+		for {
+			select {
+			case <-p.doneCh:
+				return
+			case <-timer.C:
+				fmt.Fprintf(p.writer, "\n下载 ip2region：%s 超过 %s 无进度，任务已中断", p.source, p.idleTimeout)
+				if cancel != nil {
+					cancel()
+				}
+				return
+			case <-p.idleReset:
+				if !timer.Stop() {
+					select {
+					case <-timer.C:
+					default:
+					}
+				}
+				timer.Reset(p.idleTimeout)
+			}
+		}
+	}()
+}
+
+func (p *progressReporter) signalProgress() {
+	select {
+	case p.idleReset <- struct{}{}:
+	default:
 	}
 }
 
@@ -227,22 +274,27 @@ func (p *progressReporter) Write(b []byte) (int, error) {
 	if p.writer == nil {
 		return len(b), nil
 	}
-	p.current += int64(len(b))
+	n := len(b)
+	p.current += int64(n)
+	p.signalProgress()
 	p.report(false)
-	return len(b), nil
+	return n, nil
 }
 
 func (p *progressReporter) finish(err error) {
-	if p.writer == nil || p.done {
+	if p.writer == nil {
+		p.doneOnce.Do(func() { close(p.doneCh) })
 		return
 	}
-	p.done = true
-	p.report(true)
-	if err == nil {
-		fmt.Fprintln(p.writer)
-	} else {
-		fmt.Fprintln(p.writer, " (failed)")
-	}
+	p.doneOnce.Do(func() {
+		p.report(true)
+		if err == nil {
+			fmt.Fprintln(p.writer)
+		} else {
+			fmt.Fprintln(p.writer, " (failed)")
+		}
+		close(p.doneCh)
+	})
 }
 
 func (p *progressReporter) report(force bool) {
