@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yangqihuang/mymtr/internal/geoip"
+	"github.com/hyqhyq3/mymtr/internal/geoip"
 )
 
 type Controller struct {

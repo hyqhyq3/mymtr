@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/yangqihuang/mymtr/internal/geoip"
+	"github.com/hyqhyq3/mymtr/internal/geoip"
 )
 
 type Hop struct {

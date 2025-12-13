@@ -11,9 +11,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/yangqihuang/mymtr/internal/geoip"
-	"github.com/yangqihuang/mymtr/internal/mtr"
-	"github.com/yangqihuang/mymtr/internal/tui"
+	"github.com/hyqhyq3/mymtr/internal/geoip"
+	"github.com/hyqhyq3/mymtr/internal/mtr"
+	"github.com/hyqhyq3/mymtr/internal/tui"
 )
 
 type rootOptions struct {

@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/yangqihuang/mymtr/internal/mtr"
+	"github.com/hyqhyq3/mymtr/internal/mtr"
 )
 
 type eventMsg struct {

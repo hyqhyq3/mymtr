@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/yangqihuang/mymtr/internal/mtr"
+	"github.com/hyqhyq3/mymtr/internal/mtr"
 )
 
 func Run(ctx context.Context, cancel context.CancelFunc, controller *mtr.Controller) error {

@@ -1,10 +1,11 @@
-module github.com/yangqihuang/mymtr
+module github.com/hyqhyq3/mymtr
 
 go 1.24.0
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20251212071458-897af4532ed3
 	github.com/spf13/cobra v1.8.1
 	golang.org/x/net v0.34.0
 )
