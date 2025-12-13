@@ -353,16 +353,31 @@ func detectIPVersion(dbPath string) (*xdb.Version, error) {
 	return version, nil
 }
 
-// region 格式通常为：国家|区域|省份|城市|ISP（未知项可能为 0）
+// region 格式：
+// - ip2region v2: 国家|区域|省份|城市|ISP（5 字段）
+// - ip2region v4: 国家|省份|城市|ISP（4 字段）
+// 未知项可能为 0
 func parseIP2Region(region string) *GeoLocation {
 	parts := strings.Split(region, "|")
-	if len(parts) < 5 {
+	var country, province, city, isp string
+
+	switch len(parts) {
+	case 4:
+		// ip2region v4 格式：国家|省份|城市|ISP
+		country = normalizeIP2R(parts[0])
+		province = normalizeIP2R(parts[1])
+		city = normalizeIP2R(parts[2])
+		isp = normalizeIP2R(parts[3])
+	case 5:
+		// ip2region v2 格式：国家|区域|省份|城市|ISP
+		country = normalizeIP2R(parts[0])
+		province = normalizeIP2R(parts[2])
+		city = normalizeIP2R(parts[3])
+		isp = normalizeIP2R(parts[4])
+	default:
 		return nil
 	}
-	country := normalizeIP2R(parts[0])
-	province := normalizeIP2R(parts[2])
-	city := normalizeIP2R(parts[3])
-	isp := normalizeIP2R(parts[4])
+
 	if country == "" && province == "" && city == "" && isp == "" {
 		return nil
 	}

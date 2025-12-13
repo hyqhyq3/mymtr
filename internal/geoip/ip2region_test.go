@@ -11,12 +11,22 @@ import (
 )
 
 func TestParseIP2Region(t *testing.T) {
+	// ip2region v2 格式（5 字段）
 	loc := parseIP2Region("中国|0|上海|上海|电信")
 	if loc == nil {
-		t.Fatalf("expected non-nil")
+		t.Fatalf("expected non-nil for v2 format")
 	}
 	if loc.Country != "中国" || loc.Province != "上海" || loc.City != "上海" || loc.ISP != "电信" {
-		t.Fatalf("unexpected: %#v", loc)
+		t.Fatalf("unexpected v2: %#v", loc)
+	}
+
+	// ip2region v4 格式（4 字段）
+	loc4 := parseIP2Region("中国|浙江省|杭州市|电信")
+	if loc4 == nil {
+		t.Fatalf("expected non-nil for v4 format")
+	}
+	if loc4.Country != "中国" || loc4.Province != "浙江省" || loc4.City != "杭州市" || loc4.ISP != "电信" {
+		t.Fatalf("unexpected v4: %#v", loc4)
 	}
 }
 
