@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -168,9 +169,15 @@ func renderText(s *mtr.Snapshot) error {
 			address = hop.IP
 		}
 		hostname := hop.Hostname
+		if strings.TrimSpace(hostname) == "" {
+			hostname = "-"
+		}
 		location := ""
 		if hop.Location != nil {
 			location = hop.Location.String()
+		}
+		if strings.TrimSpace(location) == "" {
+			location = "-"
 		}
 
 		stats := hop.Stats

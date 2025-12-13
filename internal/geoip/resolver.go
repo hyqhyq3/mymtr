@@ -1,6 +1,7 @@
 package geoip
 
 import (
+	"fmt"
 	"net"
 	"strings"
 )
@@ -39,5 +40,31 @@ func (g *GeoLocation) String() string {
 	if g.ISP != "" && g.ISP != "0" {
 		parts = append(parts, g.ISP)
 	}
-	return strings.Join(parts, " ")
+	if len(parts) > 0 {
+		return strings.Join(parts, " ")
+	}
+	if raw := strings.TrimSpace(g.Raw); raw != "" {
+		return sanitizeRawLocation(raw)
+	}
+	if g.Source != "" {
+		return fmt.Sprintf("[%s]", g.Source)
+	}
+	return ""
+}
+
+func sanitizeRawLocation(raw string) string {
+	// ip2region raw usually split by '|'
+	raw = strings.ReplaceAll(raw, "|", " ")
+	parts := strings.Fields(raw)
+	filtered := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p == "" || p == "0" {
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+	if len(filtered) == 0 {
+		return raw
+	}
+	return strings.Join(filtered, " ")
 }
