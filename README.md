@@ -6,7 +6,7 @@
 
 - ICMP/UDP 双协议探测，支持 IPv4/IPv6
 - 轮次、超时、最大跳数等探测参数可调
-- GeoIP 解析：`cip` 在线接口、`ip2region` 离线数据库或完全关闭；缺省可自动下载 ip2region 数据库（`--geoip-auto-download`）
+- GeoIP 解析：`cip` 在线接口、`ip2region` 离线数据库或完全关闭；缺省可自动下载 ip2region 数据库（`--geoip-auto-download`；可用 `--geoip-ip2region-url`/`MYMTR_IP2REGION_URL` 自定义下载源）
 - 反向 DNS、JSON 输出、TUI 实时视图
 - 可扩展的 `internal/mtr` 探测器与 `internal/geoip` 解析器
 
@@ -39,6 +39,14 @@ mymtr example.com --count 20 --interval 500ms --protocol udp --geoip ip2region -
 1. 设置 Go 1.24 环境与缓存
 2. 执行 `go test ./...`
 3. 执行 `go build ./...`
+
+## GeoIP 数据源说明
+
+- `cip`：默认在线接口，带缓存，适合即时查询。
+- `ip2region`：需要本地 `.xdb` 文件，首次运行可自动下载。若下载失败，可：
+  - 显式指定文件路径 `--ip2region-db path/to/db`
+  - 使用 `--geoip-ip2region-url <URL>` 或环境变量 `MYMTR_IP2REGION_URL` 指向自建镜像
+  - 关闭自动下载 `--geoip-auto-download=false` 并手动提供文件
 
 ## 许可证
 

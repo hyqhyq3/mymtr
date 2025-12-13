@@ -16,14 +16,18 @@ import (
 )
 
 const (
-	defaultIP2RegionURL       = "https://github.com/lionsoul2014/ip2region/raw/master/data/ip2region.xdb"
 	ip2RegionDownloadTimeout  = 2 * time.Minute
 	ip2RegionDefaultUserAgent = "mymtr/geoip-downloader"
+	ip2RegionURLEnv           = "MYMTR_IP2REGION_URL"
 )
 
 var (
-	ip2RegionDownloadURL = defaultIP2RegionURL
-	ip2RegionHTTPClient  = &http.Client{Timeout: 30 * time.Second}
+	ip2RegionDownloadSources = []string{
+		"https://github.com/lionsoul2014/ip2region/releases/latest/download/ip2region.xdb",
+		"https://github.com/lionsoul2014/ip2region/releases/latest/download/ip2region_v4.xdb",
+		"https://raw.githubusercontent.com/lionsoul2014/ip2region/master/data/ip2region_v4.xdb",
+	}
+	ip2RegionHTTPClient = &http.Client{Timeout: 30 * time.Second}
 )
 
 type IP2RegionResolver struct {
@@ -31,13 +35,13 @@ type IP2RegionResolver struct {
 	searcher *xdb.Searcher
 }
 
-func NewIP2RegionResolver(dbPath string, autoDownload bool) (*IP2RegionResolver, error) {
+func NewIP2RegionResolver(dbPath string, autoDownload bool, customURL string) (*IP2RegionResolver, error) {
 	dbPath = strings.TrimSpace(dbPath)
 	if dbPath == "" {
 		return nil, errors.New("ip2region db 路径为空（请设置 --ip2region-db）")
 	}
 
-	if err := ensureIP2RegionDB(dbPath, autoDownload); err != nil {
+	if err := ensureIP2RegionDB(dbPath, autoDownload, customURL); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +91,7 @@ func (r *IP2RegionResolver) Resolve(ip net.IP) *GeoLocation {
 	return loc
 }
 
-func ensureIP2RegionDB(dbPath string, autoDownload bool) error {
+func ensureIP2RegionDB(dbPath string, autoDownload bool, customURL string) error {
 	info, err := os.Stat(dbPath)
 	if err == nil {
 		if info.IsDir() {
@@ -99,15 +103,15 @@ func ensureIP2RegionDB(dbPath string, autoDownload bool) error {
 		return fmt.Errorf("ip2region db 不可用：%w", err)
 	}
 	if !autoDownload {
-		return fmt.Errorf("ip2region db 不存在：%s（可启用 --geoip-auto-download 自动下载）", dbPath)
+		return fmt.Errorf("ip2region db 不存在：%s（可启用 --geoip-auto-download 自动下载，或提供 --geoip-ip2region-url）", dbPath)
 	}
-	if err := downloadIP2RegionDB(dbPath); err != nil {
+	if err := downloadIP2RegionDB(dbPath, customURL); err != nil {
 		return fmt.Errorf("自动下载 ip2region db 失败：%w", err)
 	}
 	return nil
 }
 
-func downloadIP2RegionDB(dbPath string) error {
+func downloadIP2RegionDB(dbPath, customURL string) error {
 	dir := filepath.Dir(dbPath)
 	if dir != "" && dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -116,14 +120,43 @@ func downloadIP2RegionDB(dbPath string) error {
 	}
 
 	tmp := dbPath + ".download"
-	if err := os.Remove(tmp); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
+	sources := selectIP2RegionSources(customURL)
+	var errs []error
+
+	for _, src := range sources {
+		if err := os.Remove(tmp); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), ip2RegionDownloadTimeout)
+		err := downloadFromSource(ctx, src, tmp, dbPath)
+		cancel()
+
+		if err == nil {
+			return nil
+		}
+		errs = append(errs, fmt.Errorf("%s: %w", src, err))
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), ip2RegionDownloadTimeout)
-	defer cancel()
+	msg := make([]string, 0, len(errs))
+	for _, e := range errs {
+		msg = append(msg, e.Error())
+	}
+	return fmt.Errorf("下载 ip2region db 失败，已尝试：%s", strings.Join(msg, "; "))
+}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ip2RegionDownloadURL, nil)
+func selectIP2RegionSources(customURL string) []string {
+	if customURL = strings.TrimSpace(customURL); customURL != "" {
+		return []string{customURL}
+	}
+	if env := strings.TrimSpace(os.Getenv(ip2RegionURLEnv)); env != "" {
+		return []string{env}
+	}
+	return ip2RegionDownloadSources
+}
+
+func downloadFromSource(ctx context.Context, src, tmp, target string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, src, nil)
 	if err != nil {
 		return err
 	}
@@ -136,7 +169,8 @@ func downloadIP2RegionDB(dbPath string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("下载 ip2region db 失败，状态码：%d", resp.StatusCode)
+		io.Copy(io.Discard, resp.Body)
+		return fmt.Errorf("状态码：%d", resp.StatusCode)
 	}
 
 	out, err := os.Create(tmp)
@@ -154,7 +188,7 @@ func downloadIP2RegionDB(dbPath string) error {
 		return err
 	}
 
-	if err := os.Rename(tmp, dbPath); err != nil {
+	if err := os.Rename(tmp, target); err != nil {
 		os.Remove(tmp)
 		return err
 	}

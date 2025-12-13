@@ -26,6 +26,7 @@ type rootOptions struct {
 	noDNS     bool
 	geoip     string
 	ip2rDB    string
+	ip2rURL   string
 	noGeoIP   bool
 	json      bool
 	tui       bool
@@ -76,7 +77,8 @@ func NewRootCommand() *cobra.Command {
 				geoipSource = "off"
 			}
 			resolver, err := geoip.NewResolver(geoipSource, geoip.Options{
-				IP2RegionDB: opts.ip2rDB,
+				IP2RegionDB:  opts.ip2rDB,
+				IP2RegionURL: opts.ip2rURL,
 				AutoDownload: opts.autoDLGeo,
 			})
 			if err != nil {
@@ -141,6 +143,7 @@ func NewRootCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.noDNS, "no-dns", false, "禁用反向 DNS")
 	cmd.Flags().StringVar(&opts.geoip, "geoip", "cip", "IP 地理位置数据源：cip/ip2region/off")
 	cmd.Flags().StringVar(&opts.ip2rDB, "ip2region-db", "data/ip2region.xdb", "ip2region 数据库路径（当 --geoip=ip2region 时使用）")
+	cmd.Flags().StringVar(&opts.ip2rURL, "geoip-ip2region-url", "", "自定义 ip2region 数据库下载地址（默认自动选择官方源）")
 	cmd.Flags().BoolVar(&opts.autoDLGeo, "geoip-auto-download", true, "当使用 ip2region 且数据库缺失时自动下载")
 	cmd.Flags().BoolVar(&opts.noGeoIP, "no-geoip", false, "禁用 IP 地理位置解析")
 	cmd.Flags().BoolVar(&opts.json, "json", false, "输出 JSON")
