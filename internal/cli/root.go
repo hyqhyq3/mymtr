@@ -30,6 +30,7 @@ type rootOptions struct {
 	json      bool
 	tui       bool
 	noTUI     bool
+	autoDLGeo bool
 }
 
 func NewRootCommand() *cobra.Command {
@@ -74,7 +75,10 @@ func NewRootCommand() *cobra.Command {
 			if opts.noGeoIP {
 				geoipSource = "off"
 			}
-			resolver, err := geoip.NewResolver(geoipSource, geoip.Options{IP2RegionDB: opts.ip2rDB})
+			resolver, err := geoip.NewResolver(geoipSource, geoip.Options{
+				IP2RegionDB: opts.ip2rDB,
+				AutoDownload: opts.autoDLGeo,
+			})
 			if err != nil {
 				return err
 			}
@@ -137,6 +141,7 @@ func NewRootCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.noDNS, "no-dns", false, "禁用反向 DNS")
 	cmd.Flags().StringVar(&opts.geoip, "geoip", "cip", "IP 地理位置数据源：cip/ip2region/off")
 	cmd.Flags().StringVar(&opts.ip2rDB, "ip2region-db", "data/ip2region.xdb", "ip2region 数据库路径（当 --geoip=ip2region 时使用）")
+	cmd.Flags().BoolVar(&opts.autoDLGeo, "geoip-auto-download", true, "当使用 ip2region 且数据库缺失时自动下载")
 	cmd.Flags().BoolVar(&opts.noGeoIP, "no-geoip", false, "禁用 IP 地理位置解析")
 	cmd.Flags().BoolVar(&opts.json, "json", false, "输出 JSON")
 	cmd.Flags().BoolVar(&opts.tui, "tui", true, "启用 TUI 实时界面（默认开启）")

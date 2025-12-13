@@ -6,7 +6,7 @@
 
 - ICMP/UDP 双协议探测，支持 IPv4/IPv6
 - 轮次、超时、最大跳数等探测参数可调
-- GeoIP 解析：`cip` 在线接口、`ip2region` 离线数据库或完全关闭
+- GeoIP 解析：`cip` 在线接口、`ip2region` 离线数据库或完全关闭；缺省可自动下载 ip2region 数据库（`--geoip-auto-download`）
 - 反向 DNS、JSON 输出、TUI 实时视图
 - 可扩展的 `internal/mtr` 探测器与 `internal/geoip` 解析器
 
