@@ -30,13 +30,13 @@ other = "禁用反向 DNS"
 other = "IP 地理位置数据源：cip/ip2region/off"
 
 [cmd.flag.ip2regionDB]
-other = "ip2region 数据库路径（当 --geoip=ip2region 时使用）"
+other = "ip2region 数据库路径（默认存放在用户缓存目录）"
 
 [cmd.flag.ip2regionURL]
 other = "自定义 ip2region 数据库下载地址（默认自动选择官方源）"
 
-[cmd.flag.autoDLGeo]
-other = "当使用 ip2region 且数据库缺失时自动下载"
+[cmd.flag.geoipDownload]
+other = "ip2region 下载策略：ask/yes/no"
 
 [cmd.flag.noGeoIP]
 other = "禁用 IP 地理位置解析"
@@ -49,6 +49,10 @@ other = "启用 TUI 实时界面（默认开启）"
 
 [cmd.flag.noTUI]
 other = "禁用 TUI，使用一次性输出模式"
+
+# CLI 提示
+[cmd.prompt.retry]
+other = "请输入 y 或 n。"
 
 # CLI 错误
 [err.emptyResult]
@@ -97,7 +101,16 @@ other = "ip2region db 路径应为文件：{{.Path}}"
 other = "ip2region db 不可用：{{.Error}}"
 
 [geoip.ip2region.notExist]
-other = "ip2region db 不存在：{{.Path}}（可启用 --geoip-auto-download 自动下载，或提供 --geoip-ip2region-url）"
+other = "ip2region db 不存在：{{.Path}}（可手动指定 --ip2region-db，或通过 --geoip-ip2region-url/MYMTR_IP2REGION_URL 自定义下载源）"
+
+[geoip.ip2region.confirmDownload]
+other = "ip2region 数据库缺失：{{.Path}}。是否立即下载？"
+
+[geoip.ip2region.downloadDeclined]
+other = "已取消 ip2region 下载，数据库未准备。"
+
+[geoip.ip2region.promptUnavailable]
+other = "ip2region 数据库缺失且无法交互确认；请使用 --geoip-download=yes 参数运行。"
 
 [geoip.ip2region.downloadFailed]
 other = "自动下载 ip2region db 失败：{{.Error}}"

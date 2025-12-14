@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -29,15 +31,20 @@ type rootOptions struct {
 	geoip     string
 	ip2rDB    string
 	ip2rURL   string
+	geoipDL   string
 	noGeoIP   bool
 	json      bool
 	tui       bool
 	noTUI     bool
-	autoDLGeo bool
 }
 
 func NewRootCommand() *cobra.Command {
-	opts := &rootOptions{tui: true}
+	opts := &rootOptions{
+		tui:     true,
+		geoip:   "ip2region",
+		ip2rDB:  geoip.DefaultIP2RegionDBPath(),
+		geoipDL: "ask",
+	}
 
 	cmd := &cobra.Command{
 		Use:           "mymtr <target>",
@@ -78,10 +85,21 @@ func NewRootCommand() *cobra.Command {
 			if opts.noGeoIP {
 				geoipSource = "off"
 			}
+			downloadAnswer, err := parseDownloadAnswer(opts.geoipDL)
+			if err != nil {
+				return err
+			}
+			var prompt geoip.DownloadPrompt
+			if downloadAnswer == geoip.DownloadAsk {
+				prompt = newDownloadPrompt(cmd)
+			}
 			resolver, err := geoip.NewResolver(geoipSource, geoip.Options{
 				IP2RegionDB:  opts.ip2rDB,
 				IP2RegionURL: opts.ip2rURL,
-				AutoDownload: opts.autoDLGeo,
+				Download: geoip.DownloadOption{
+					Answer: downloadAnswer,
+					Prompt: prompt,
+				},
 			})
 			if err != nil {
 				return err
@@ -143,10 +161,10 @@ func NewRootCommand() *cobra.Command {
 	cmd.Flags().StringVar(&opts.protocol, "protocol", string(mtr.ProtocolICMP), i18n.T("cmd.flag.protocol"))
 	cmd.Flags().IntVar(&opts.ipVersion, "ip-version", 4, i18n.T("cmd.flag.ipVersion"))
 	cmd.Flags().BoolVar(&opts.noDNS, "no-dns", false, i18n.T("cmd.flag.noDNS"))
-	cmd.Flags().StringVar(&opts.geoip, "geoip", "cip", i18n.T("cmd.flag.geoip"))
-	cmd.Flags().StringVar(&opts.ip2rDB, "ip2region-db", "data/ip2region.xdb", i18n.T("cmd.flag.ip2regionDB"))
+	cmd.Flags().StringVar(&opts.geoip, "geoip", opts.geoip, i18n.T("cmd.flag.geoip"))
+	cmd.Flags().StringVar(&opts.ip2rDB, "ip2region-db", opts.ip2rDB, i18n.T("cmd.flag.ip2regionDB"))
 	cmd.Flags().StringVar(&opts.ip2rURL, "geoip-ip2region-url", "", i18n.T("cmd.flag.ip2regionURL"))
-	cmd.Flags().BoolVar(&opts.autoDLGeo, "geoip-auto-download", true, i18n.T("cmd.flag.autoDLGeo"))
+	cmd.Flags().StringVar(&opts.geoipDL, "geoip-download", opts.geoipDL, i18n.T("cmd.flag.geoipDownload"))
 	cmd.Flags().BoolVar(&opts.noGeoIP, "no-geoip", false, i18n.T("cmd.flag.noGeoIP"))
 	cmd.Flags().BoolVar(&opts.json, "json", false, i18n.T("cmd.flag.json"))
 	cmd.Flags().BoolVar(&opts.tui, "tui", true, i18n.T("cmd.flag.tui"))
@@ -200,6 +218,48 @@ func renderText(s *mtr.Snapshot) error {
 		)
 	}
 	return w.Flush()
+}
+
+func parseDownloadAnswer(v string) (geoip.DownloadAnswer, error) {
+	value := strings.ToLower(strings.TrimSpace(v))
+	switch value {
+	case "", "ask":
+		return geoip.DownloadAsk, nil
+	case "yes", "y":
+		return geoip.DownloadYes, nil
+	case "no", "n":
+		return geoip.DownloadNo, nil
+	default:
+		return geoip.DownloadAsk, fmt.Errorf("invalid --geoip-download value: %s", v)
+	}
+}
+
+func newDownloadPrompt(cmd *cobra.Command) geoip.DownloadPrompt {
+	return func(message string) (bool, error) {
+		reader := bufio.NewReader(cmd.InOrStdin())
+		for {
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s [Y/n]: ", message)
+			input, err := reader.ReadString('\n')
+			if err != nil && !errors.Is(err, io.EOF) {
+				return false, err
+			}
+			input = strings.TrimSpace(input)
+			if input == "" {
+				return true, nil
+			}
+			switch strings.ToLower(input) {
+			case "y", "yes":
+				return true, nil
+			case "n", "no":
+				return false, nil
+			default:
+				fmt.Fprintln(cmd.ErrOrStderr(), i18n.T("cmd.prompt.retry"))
+			}
+			if errors.Is(err, io.EOF) {
+				return false, err
+			}
+		}
+	}
 }
 
 func emptyAsDash(s string) string {

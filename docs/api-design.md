@@ -505,7 +505,11 @@ import (
 
 func main() {
     // 初始化 GeoIP 解析器
-    resolver, err := geoip.NewIP2RegionResolver("data/ip2region.xdb")
+    resolver, err := geoip.NewIP2RegionResolver(
+        geoip.DefaultIP2RegionDBPath(),
+        "",
+        geoip.DownloadOption{Answer: geoip.DownloadYes},
+    )
     if err != nil {
         panic(err)
     }

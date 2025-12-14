@@ -34,18 +34,60 @@ var (
 	progressOutput      io.Writer = os.Stderr
 )
 
+type DownloadAnswer int
+
+const (
+	DownloadAsk DownloadAnswer = iota
+	DownloadYes
+	DownloadNo
+)
+
+type DownloadPrompt func(message string) (bool, error)
+
+type DownloadOption struct {
+	Answer DownloadAnswer
+	Prompt DownloadPrompt
+}
+
+// DefaultIP2RegionDBPath 返回用户缓存目录下的默认 ip2region.xdb 存放路径；若无法获取缓存目录，退回到系统临时目录。
+func DefaultIP2RegionDBPath() string {
+	if cacheDir, err := os.UserCacheDir(); err == nil {
+		if trimmed := strings.TrimSpace(cacheDir); trimmed != "" {
+			return filepath.Join(trimmed, "mymtr", "ip2region.xdb")
+		}
+	}
+	return filepath.Join(os.TempDir(), "mymtr", "ip2region.xdb")
+}
+
 type IP2RegionResolver struct {
 	dbPath   string
 	searcher *xdb.Searcher
 }
 
-func NewIP2RegionResolver(dbPath string, autoDownload bool, customURL string) (*IP2RegionResolver, error) {
+func decideIP2RegionDownload(opt DownloadOption, dbPath string) (bool, error) {
+	switch opt.Answer {
+	case DownloadYes:
+		return true, nil
+	case DownloadNo:
+		return false, nil
+	case DownloadAsk:
+		if opt.Prompt == nil {
+			return false, errors.New(i18n.T("geoip.ip2region.promptUnavailable"))
+		}
+		message := i18n.Tf("geoip.ip2region.confirmDownload", map[string]interface{}{"Path": dbPath})
+		return opt.Prompt(message)
+	default:
+		return false, fmt.Errorf("unsupported download answer: %d", opt.Answer)
+	}
+}
+
+func NewIP2RegionResolver(dbPath string, customURL string, downloadOpt DownloadOption) (*IP2RegionResolver, error) {
 	dbPath = strings.TrimSpace(dbPath)
 	if dbPath == "" {
 		return nil, errors.New(i18n.T("geoip.ip2region.pathEmpty"))
 	}
 
-	if err := ensureIP2RegionDB(dbPath, autoDownload, customURL); err != nil {
+	if err := ensureIP2RegionDB(dbPath, customURL, downloadOpt); err != nil {
 		return nil, err
 	}
 
@@ -95,7 +137,7 @@ func (r *IP2RegionResolver) Resolve(ip net.IP) *GeoLocation {
 	return loc
 }
 
-func ensureIP2RegionDB(dbPath string, autoDownload bool, customURL string) error {
+func ensureIP2RegionDB(dbPath string, customURL string, opt DownloadOption) error {
 	info, err := os.Stat(dbPath)
 	if err == nil {
 		if info.IsDir() {
@@ -106,8 +148,12 @@ func ensureIP2RegionDB(dbPath string, autoDownload bool, customURL string) error
 	if !errors.Is(err, os.ErrNotExist) {
 		return errors.New(i18n.Tf("geoip.ip2region.unavailable", map[string]interface{}{"Error": err.Error()}))
 	}
-	if !autoDownload {
-		return errors.New(i18n.Tf("geoip.ip2region.notExist", map[string]interface{}{"Path": dbPath}))
+	allowed, decideErr := decideIP2RegionDownload(opt, dbPath)
+	if decideErr != nil {
+		return decideErr
+	}
+	if !allowed {
+		return errors.New(i18n.T("geoip.ip2region.downloadDeclined"))
 	}
 	if err := downloadIP2RegionDB(dbPath, customURL); err != nil {
 		return errors.New(i18n.Tf("geoip.ip2region.downloadFailed", map[string]interface{}{"Error": err.Error()}))

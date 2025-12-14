@@ -14,7 +14,7 @@ A network diagnostic tool with IP geolocation (MTR-style). Built with Go + Bubbl
 
 - ICMP/UDP dual-protocol probing with IPv4/IPv6 support
 - Configurable probe parameters: rounds, timeout, max hops
-- GeoIP resolution: `cip` online API, `ip2region` offline database, or disabled; auto-download ip2region database supported (`--geoip-auto-download`; customizable via `--geoip-ip2region-url` or `MYMTR_IP2REGION_URL`)
+- GeoIP resolution: `ip2region` offline database (default, auto-downloaded into your user cache), `cip` online API, or disabled; download source customizable via `--geoip-ip2region-url` or `MYMTR_IP2REGION_URL`
 - Reverse DNS, JSON output, real-time TUI view
 - Extensible `internal/mtr` probers and `internal/geoip` resolvers
 
@@ -66,7 +66,7 @@ go run ./cmd/mymtr --help
 Typical usage (one-shot output mode):
 
 ```bash
-mymtr example.com --count 20 --interval 500ms --protocol udp --geoip ip2region --ip2region-db data/ip2region.xdb --no-tui
+mymtr example.com --count 20 --interval 500ms --protocol udp --no-tui
 ```
 
 ## Internationalization (i18n)
@@ -89,10 +89,17 @@ The repository includes GitHub Actions (`.github/workflows/ci.yml`) that automat
 ## GeoIP Data Sources
 
 - `cip`: Default online API with caching, suitable for instant queries.
-- `ip2region`: Requires local `.xdb` file, auto-download available on first run. If download fails:
+- `ip2region` (default): Offline database cached under your user cache directory (for example `~/Library/Caches/mymtr/ip2region.xdb` on macOS, `~/.cache/mymtr/ip2region.xdb` on Linux, `%LocalAppData%\\mymtr\\ip2region.xdb` on Windows). If auto-download fails:
   - Specify file path explicitly with `--ip2region-db path/to/db`
   - Use `--geoip-ip2region-url <URL>` or `MYMTR_IP2REGION_URL` environment variable to point to a custom mirror
-  - Disable auto-download with `--geoip-auto-download=false` and provide the file manually
+  - Pre-answer the download prompt via `--geoip-download=yes` (or `no`) for non-interactive environments
+
+## Acknowledgements
+
+This project benefits from several excellent open-source works:
+- [lionsoul2014/ip2region](https://github.com/lionsoul2014/ip2region) for the high-performance IP database.
+- [Charmbracelet Bubble Tea](https://github.com/charmbracelet/bubbletea) and its ecosystem for the TUI framework.
+- [spf13/cobra](https://github.com/spf13/cobra) for the CLI scaffolding.
 
 ## License
 

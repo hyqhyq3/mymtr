@@ -30,13 +30,13 @@ other = "Disable reverse DNS lookup"
 other = "IP geolocation source: cip/ip2region/off"
 
 [cmd.flag.ip2regionDB]
-other = "ip2region database path (used when --geoip=ip2region)"
+other = "ip2region database path (default: stored under user cache directory)"
 
 [cmd.flag.ip2regionURL]
 other = "Custom ip2region database download URL (default: auto-select official source)"
 
-[cmd.flag.autoDLGeo]
-other = "Auto-download ip2region database when missing"
+[cmd.flag.geoipDownload]
+other = "Behavior when ip2region download is required: ask/yes/no"
 
 [cmd.flag.noGeoIP]
 other = "Disable IP geolocation"
@@ -49,6 +49,10 @@ other = "Enable TUI real-time interface (default: enabled)"
 
 [cmd.flag.noTUI]
 other = "Disable TUI, use one-shot output mode"
+
+# CLI prompts
+[cmd.prompt.retry]
+other = "Please answer with y or n."
 
 # CLI errors
 [err.emptyResult]
@@ -97,7 +101,16 @@ other = "ip2region db path should be a file: {{.Path}}"
 other = "ip2region db unavailable: {{.Error}}"
 
 [geoip.ip2region.notExist]
-other = "ip2region db not found: {{.Path}} (enable --geoip-auto-download to download automatically, or provide --geoip-ip2region-url)"
+other = "ip2region db not found: {{.Path}} (provide --ip2region-db or override download source via --geoip-ip2region-url/MYMTR_IP2REGION_URL)"
+
+[geoip.ip2region.confirmDownload]
+other = "ip2region database is missing at {{.Path}}. Download now?"
+
+[geoip.ip2region.downloadDeclined]
+other = "ip2region download aborted (database not downloaded)"
+
+[geoip.ip2region.promptUnavailable]
+other = "ip2region database missing and interactive confirmation unavailable; rerun with --geoip-download=yes"
 
 [geoip.ip2region.downloadFailed]
 other = "Auto-download ip2region db failed: {{.Error}}"

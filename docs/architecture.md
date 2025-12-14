@@ -81,7 +81,7 @@ mymtr/
 │   └── types/
 │       └── types.go             # 公共类型定义
 ├── data/
-│   └── ip2region.xdb            # IP 数据库文件
+│   └── ip2region.xdb            # IP 数据库文件（可选，默认下载到用户缓存）
 ├── docs/
 │   ├── architecture.md          # 架构设计
 │   ├── technical-design.md      # 技术设计
