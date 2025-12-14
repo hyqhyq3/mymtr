@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
+
+	"github.com/hyqhyq3/mymtr/internal/i18n"
 )
 
 const (
@@ -40,7 +42,7 @@ type IP2RegionResolver struct {
 func NewIP2RegionResolver(dbPath string, autoDownload bool, customURL string) (*IP2RegionResolver, error) {
 	dbPath = strings.TrimSpace(dbPath)
 	if dbPath == "" {
-		return nil, errors.New("ip2region db 路径为空（请设置 --ip2region-db）")
+		return nil, errors.New(i18n.T("geoip.ip2region.pathEmpty"))
 	}
 
 	if err := ensureIP2RegionDB(dbPath, autoDownload, customURL); err != nil {
@@ -97,18 +99,18 @@ func ensureIP2RegionDB(dbPath string, autoDownload bool, customURL string) error
 	info, err := os.Stat(dbPath)
 	if err == nil {
 		if info.IsDir() {
-			return fmt.Errorf("ip2region db 路径应为文件：%s", dbPath)
+			return errors.New(i18n.Tf("geoip.ip2region.pathIsDir", map[string]interface{}{"Path": dbPath}))
 		}
 		return nil
 	}
 	if !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("ip2region db 不可用：%w", err)
+		return errors.New(i18n.Tf("geoip.ip2region.unavailable", map[string]interface{}{"Error": err.Error()}))
 	}
 	if !autoDownload {
-		return fmt.Errorf("ip2region db 不存在：%s（可启用 --geoip-auto-download 自动下载，或提供 --geoip-ip2region-url）", dbPath)
+		return errors.New(i18n.Tf("geoip.ip2region.notExist", map[string]interface{}{"Path": dbPath}))
 	}
 	if err := downloadIP2RegionDB(dbPath, customURL); err != nil {
-		return fmt.Errorf("自动下载 ip2region db 失败：%w", err)
+		return errors.New(i18n.Tf("geoip.ip2region.downloadFailed", map[string]interface{}{"Error": err.Error()}))
 	}
 	return nil
 }
@@ -117,7 +119,7 @@ func downloadIP2RegionDB(dbPath, customURL string) error {
 	dir := filepath.Dir(dbPath)
 	if dir != "" && dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("创建目录失败：%w", err)
+			return errors.New(i18n.Tf("geoip.ip2region.mkdirFailed", map[string]interface{}{"Error": err.Error()}))
 		}
 	}
 
@@ -143,7 +145,7 @@ func downloadIP2RegionDB(dbPath, customURL string) error {
 	for _, e := range errs {
 		msg = append(msg, e.Error())
 	}
-	return fmt.Errorf("下载 ip2region db 失败，已尝试：%s", strings.Join(msg, "; "))
+	return errors.New(i18n.Tf("geoip.ip2region.allSourcesFailed", map[string]interface{}{"Errors": strings.Join(msg, "; ")}))
 }
 
 func selectIP2RegionSources(customURL string) []string {
@@ -174,7 +176,7 @@ func downloadFromSource(parent context.Context, src, tmp, target string) error {
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		io.Copy(io.Discard, resp.Body)
-		return fmt.Errorf("状态码：%d", resp.StatusCode)
+		return errors.New(i18n.Tf("geoip.ip2region.statusCode", map[string]interface{}{"Code": resp.StatusCode}))
 	}
 
 	out, err := os.Create(tmp)
@@ -245,7 +247,7 @@ func (p *progressReporter) startIdleWatch(cancel context.CancelFunc) {
 			case <-p.doneCh:
 				return
 			case <-timer.C:
-				fmt.Fprintf(p.writer, "\n下载 ip2region：%s 超过 %s 无进度，任务已中断", p.source, p.idleTimeout)
+				fmt.Fprintf(p.writer, "\n%s", i18n.Tf("geoip.ip2region.timeout", map[string]interface{}{"Source": p.source, "Duration": p.idleTimeout.String()}))
 				if cancel != nil {
 					cancel()
 				}
@@ -313,7 +315,7 @@ func (p *progressReporter) report(force bool) {
 	} else {
 		status = fmt.Sprintf("%s downloaded", humanBytes(p.current))
 	}
-	fmt.Fprintf(p.writer, "\r下载 ip2region：%s [%s]", p.source, status)
+	fmt.Fprintf(p.writer, "\r%s", i18n.Tf("geoip.ip2region.downloading", map[string]interface{}{"Source": p.source, "Status": status}))
 }
 
 func humanBytes(n int64) string {
@@ -333,22 +335,22 @@ func humanBytes(n int64) string {
 func detectIPVersion(dbPath string) (*xdb.Version, error) {
 	handle, err := os.Open(dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("打开 ip2region db 失败：%w", err)
+		return nil, errors.New(i18n.Tf("geoip.ip2region.openFailed", map[string]interface{}{"Error": err.Error()}))
 	}
 	defer handle.Close()
 
 	if err := xdb.Verify(handle); err != nil {
-		return nil, fmt.Errorf("ip2region db 校验失败：%w", err)
+		return nil, errors.New(i18n.Tf("geoip.ip2region.verifyFailed", map[string]interface{}{"Error": err.Error()}))
 	}
 
 	header, err := xdb.LoadHeader(handle)
 	if err != nil {
-		return nil, fmt.Errorf("读取 ip2region header 失败：%w", err)
+		return nil, errors.New(i18n.Tf("geoip.ip2region.headerFailed", map[string]interface{}{"Error": err.Error()}))
 	}
 
 	version, err := xdb.VersionFromHeader(header)
 	if err != nil {
-		return nil, fmt.Errorf("解析 ip2region 版本失败：%w", err)
+		return nil, errors.New(i18n.Tf("geoip.ip2region.versionFailed", map[string]interface{}{"Error": err.Error()}))
 	}
 	return version, nil
 }

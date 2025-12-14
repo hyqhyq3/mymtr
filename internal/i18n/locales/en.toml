@@ -1,0 +1,130 @@
+# English translations for mymtr
+
+# CLI command descriptions
+[cmd.short]
+other = "Network diagnostic tool with IP geolocation (MTR-style)"
+
+# CLI flag descriptions
+[cmd.flag.maxHops]
+other = "Maximum number of hops"
+
+[cmd.flag.count]
+other = "Number of probe rounds (0=infinite, positive recommended for CLI mode)"
+
+[cmd.flag.interval]
+other = "Interval between probe rounds"
+
+[cmd.flag.timeout]
+other = "Timeout for each probe"
+
+[cmd.flag.protocol]
+other = "Probe protocol: icmp/udp"
+
+[cmd.flag.ipVersion]
+other = "IP version: 4/6"
+
+[cmd.flag.noDNS]
+other = "Disable reverse DNS lookup"
+
+[cmd.flag.geoip]
+other = "IP geolocation source: cip/ip2region/off"
+
+[cmd.flag.ip2regionDB]
+other = "ip2region database path (used when --geoip=ip2region)"
+
+[cmd.flag.ip2regionURL]
+other = "Custom ip2region database download URL (default: auto-select official source)"
+
+[cmd.flag.autoDLGeo]
+other = "Auto-download ip2region database when missing"
+
+[cmd.flag.noGeoIP]
+other = "Disable IP geolocation"
+
+[cmd.flag.json]
+other = "Output JSON"
+
+[cmd.flag.tui]
+other = "Enable TUI real-time interface (default: enabled)"
+
+[cmd.flag.noTUI]
+other = "Disable TUI, use one-shot output mode"
+
+# CLI errors
+[err.emptyResult]
+other = "Empty result"
+
+# TUI messages
+[tui.starting]
+other = "Starting... (q to quit)"
+
+[tui.help]
+other = "Press p to pause/resume, q/esc/ctrl+c to quit"
+
+[tui.paused]
+other = "Paused"
+
+[tui.done]
+other = "Done"
+
+# MTR controller errors
+[err.cfgEmpty]
+other = "cfg cannot be nil"
+
+[err.proberEmpty]
+other = "prober cannot be nil"
+
+[err.targetEmpty]
+other = "target cannot be empty"
+
+[err.ipVersionInvalid]
+other = "ip-version only supports 4/6, got: {{.Version}}"
+
+[err.resolveTarget]
+other = "Failed to resolve target: {{.Error}}"
+
+[err.ipNotFound]
+other = "No IPv{{.Version}} address found: {{.Target}}"
+
+# ip2region messages
+[geoip.ip2region.pathEmpty]
+other = "ip2region db path is empty (please set --ip2region-db)"
+
+[geoip.ip2region.pathIsDir]
+other = "ip2region db path should be a file: {{.Path}}"
+
+[geoip.ip2region.unavailable]
+other = "ip2region db unavailable: {{.Error}}"
+
+[geoip.ip2region.notExist]
+other = "ip2region db not found: {{.Path}} (enable --geoip-auto-download to download automatically, or provide --geoip-ip2region-url)"
+
+[geoip.ip2region.downloadFailed]
+other = "Auto-download ip2region db failed: {{.Error}}"
+
+[geoip.ip2region.mkdirFailed]
+other = "Failed to create directory: {{.Error}}"
+
+[geoip.ip2region.allSourcesFailed]
+other = "Failed to download ip2region db, tried: {{.Errors}}"
+
+[geoip.ip2region.statusCode]
+other = "Status code: {{.Code}}"
+
+[geoip.ip2region.downloading]
+other = "Downloading ip2region: {{.Source}} [{{.Status}}]"
+
+[geoip.ip2region.timeout]
+other = "Downloading ip2region: {{.Source}} no progress for {{.Duration}}, task cancelled"
+
+[geoip.ip2region.openFailed]
+other = "Failed to open ip2region db: {{.Error}}"
+
+[geoip.ip2region.verifyFailed]
+other = "ip2region db verification failed: {{.Error}}"
+
+[geoip.ip2region.headerFailed]
+other = "Failed to read ip2region header: {{.Error}}"
+
+[geoip.ip2region.versionFailed]
+other = "Failed to parse ip2region version: {{.Error}}"

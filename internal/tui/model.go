@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/hyqhyq3/mymtr/internal/i18n"
 	"github.com/hyqhyq3/mymtr/internal/mtr"
 )
 
@@ -101,7 +102,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) View() string {
 	if m.snapshot == nil {
-		return m.styles.muted.Render("启动中... (q 退出)\n")
+		return m.styles.muted.Render(i18n.T("tui.starting") + "\n")
 	}
 
 	status := []string{
@@ -115,10 +116,10 @@ func (m *model) View() string {
 		status = append(status, fmt.Sprintf("Count: %d", m.snapshot.Count))
 	}
 	if m.paused {
-		status = append(status, "Paused")
+		status = append(status, i18n.T("tui.paused"))
 	}
 	if m.done {
-		status = append(status, "Done")
+		status = append(status, i18n.T("tui.done"))
 	}
 	if m.err != nil && !m.done {
 		status = append(status, fmt.Sprintf("Error: %v", m.err))
@@ -170,7 +171,7 @@ func (m *model) View() string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(m.styles.muted.Render("按 p 暂停/继续，按 q/esc/ctrl+c 退出"))
+	b.WriteString(m.styles.muted.Render(i18n.T("tui.help")))
 	b.WriteString("\n")
 	return b.String()
 }

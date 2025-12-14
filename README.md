@@ -1,82 +1,99 @@
 # mymtr
 
-带 IP 地理位置解析的多跳网络诊断工具（MTR 风格）。项目基于 Go + Bubble Tea TUI 构建，可在 CLI/一次性输出与实时 TUI 间自由切换，并支持自定义 GeoIP 数据源。
+[![CI](https://github.com/hyqhyq3/mymtr/actions/workflows/ci.yml/badge.svg)](https://github.com/hyqhyq3/mymtr/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/hyqhyq3/mymtr)](https://github.com/hyqhyq3/mymtr/releases/latest)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/hyqhyq3/mymtr)](https://go.dev/)
+[![License](https://img.shields.io/github/license/hyqhyq3/mymtr)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hyqhyq3/mymtr)](https://goreportcard.com/report/github.com/hyqhyq3/mymtr)
 
-## 功能亮点
+[中文文档](README-zh.md)
 
-- ICMP/UDP 双协议探测，支持 IPv4/IPv6
-- 轮次、超时、最大跳数等探测参数可调
-- GeoIP 解析：`cip` 在线接口、`ip2region` 离线数据库或完全关闭；缺省可自动下载 ip2region 数据库（`--geoip-auto-download`；可用 `--geoip-ip2region-url`/`MYMTR_IP2REGION_URL` 自定义下载源）
-- 反向 DNS、JSON 输出、TUI 实时视图
-- 可扩展的 `internal/mtr` 探测器与 `internal/geoip` 解析器
+A network diagnostic tool with IP geolocation (MTR-style). Built with Go + Bubble Tea TUI, supporting both CLI one-shot output and real-time TUI modes with customizable GeoIP data sources.
 
-更多设计背景与模块说明见 `docs/architecture.md`、`docs/api-design.md`、`docs/technical-design.md`。
+## Features
 
-## 安装
+- ICMP/UDP dual-protocol probing with IPv4/IPv6 support
+- Configurable probe parameters: rounds, timeout, max hops
+- GeoIP resolution: `cip` online API, `ip2region` offline database, or disabled; auto-download ip2region database supported (`--geoip-auto-download`; customizable via `--geoip-ip2region-url` or `MYMTR_IP2REGION_URL`)
+- Reverse DNS, JSON output, real-time TUI view
+- Extensible `internal/mtr` probers and `internal/geoip` resolvers
 
-### 一键安装（推荐）
+For design background and module details, see `docs/architecture.md`, `docs/api-design.md`, `docs/technical-design.md`.
+
+## Installation
+
+### One-line Install (Recommended)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hyqhyq3/mymtr/main/install.sh | bash
 ```
 
-自定义安装目录：
+Custom install directory:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hyqhyq3/mymtr/main/install.sh | INSTALL_DIR=~/.local/bin bash
 ```
 
-安装指定版本：
+Install specific version:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hyqhyq3/mymtr/main/install.sh | VERSION=v0.1.0 bash
 ```
 
-### 从 Release 下载
+### Download from Release
 
-访问 [Releases](https://github.com/hyqhyq3/mymtr/releases) 页面下载对应平台的预编译二进制文件。
+Visit the [Releases](https://github.com/hyqhyq3/mymtr/releases) page to download pre-built binaries for your platform.
 
-支持的平台：
+Supported platforms:
 - Linux (amd64, arm64)
 - macOS (amd64, arm64)
 - Windows (amd64, arm64)
 
-### 从源码构建
+### Build from Source
 
 ```bash
 git clone https://github.com/hyqhyq3/mymtr.git
 cd mymtr
 
-# 构建/测试
+# Build/Test
 make build
 make test
 
-# 命令帮助
+# Help
 go run ./cmd/mymtr --help
 ```
 
-典型用法（一次性输出模式）：
+Typical usage (one-shot output mode):
 
 ```bash
 mymtr example.com --count 20 --interval 500ms --protocol udp --geoip ip2region --ip2region-db data/ip2region.xdb --no-tui
 ```
 
-## 自动化构建
+## Internationalization (i18n)
 
-仓库内置 GitHub Actions（`.github/workflows/ci.yml`），在 `main` 和 Pull Request 上自动完成：
+mymtr supports automatic language detection based on your system locale. The following languages are supported:
 
-1. 设置 Go 1.24 环境与缓存
-2. 执行 `go test ./...`
-3. 执行 `go build ./...`
+- English (default)
+- Chinese (Simplified)
 
-## GeoIP 数据源说明
+The language is automatically selected based on your system's `LANG`, `LC_ALL`, `LC_MESSAGES`, or `LANGUAGE` environment variables.
 
-- `cip`：默认在线接口，带缓存，适合即时查询。
-- `ip2region`：需要本地 `.xdb` 文件，首次运行可自动下载。若下载失败，可：
-  - 显式指定文件路径 `--ip2region-db path/to/db`
-  - 使用 `--geoip-ip2region-url <URL>` 或环境变量 `MYMTR_IP2REGION_URL` 指向自建镜像
-  - 关闭自动下载 `--geoip-auto-download=false` 并手动提供文件
+## CI/CD
 
-## 许可证
+The repository includes GitHub Actions (`.github/workflows/ci.yml`) that automatically:
 
-本项目遵循 MIT License，详见 `LICENSE`。
+1. Set up Go 1.24 environment with caching
+2. Run `go test ./...`
+3. Run `go build ./...`
+
+## GeoIP Data Sources
+
+- `cip`: Default online API with caching, suitable for instant queries.
+- `ip2region`: Requires local `.xdb` file, auto-download available on first run. If download fails:
+  - Specify file path explicitly with `--ip2region-db path/to/db`
+  - Use `--geoip-ip2region-url <URL>` or `MYMTR_IP2REGION_URL` environment variable to point to a custom mirror
+  - Disable auto-download with `--geoip-auto-download=false` and provide the file manually
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.

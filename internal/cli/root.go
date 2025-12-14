@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/hyqhyq3/mymtr/internal/geoip"
+	"github.com/hyqhyq3/mymtr/internal/i18n"
 	"github.com/hyqhyq3/mymtr/internal/mtr"
 	"github.com/hyqhyq3/mymtr/internal/tui"
 )
@@ -40,7 +41,7 @@ func NewRootCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:           "mymtr <target>",
-		Short:         "带 IP 地理位置解析的网络诊断工具（MTR 风格）",
+		Short:         i18n.T("cmd.short"),
 		Args:          cobra.ExactArgs(1),
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -135,28 +136,28 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.maxHops, "max-hops", 30, "最大跳数")
-	cmd.Flags().IntVar(&opts.count, "count", 10, "探测轮数（0=无限，CLI 模式建议设置为正数）")
-	cmd.Flags().DurationVar(&opts.interval, "interval", time.Second, "每轮探测间隔")
-	cmd.Flags().DurationVar(&opts.timeout, "timeout", time.Second, "单次探测超时")
-	cmd.Flags().StringVar(&opts.protocol, "protocol", string(mtr.ProtocolICMP), "探测协议：icmp/udp")
-	cmd.Flags().IntVar(&opts.ipVersion, "ip-version", 4, "IP 版本：4/6")
-	cmd.Flags().BoolVar(&opts.noDNS, "no-dns", false, "禁用反向 DNS")
-	cmd.Flags().StringVar(&opts.geoip, "geoip", "cip", "IP 地理位置数据源：cip/ip2region/off")
-	cmd.Flags().StringVar(&opts.ip2rDB, "ip2region-db", "data/ip2region.xdb", "ip2region 数据库路径（当 --geoip=ip2region 时使用）")
-	cmd.Flags().StringVar(&opts.ip2rURL, "geoip-ip2region-url", "", "自定义 ip2region 数据库下载地址（默认自动选择官方源）")
-	cmd.Flags().BoolVar(&opts.autoDLGeo, "geoip-auto-download", true, "当使用 ip2region 且数据库缺失时自动下载")
-	cmd.Flags().BoolVar(&opts.noGeoIP, "no-geoip", false, "禁用 IP 地理位置解析")
-	cmd.Flags().BoolVar(&opts.json, "json", false, "输出 JSON")
-	cmd.Flags().BoolVar(&opts.tui, "tui", true, "启用 TUI 实时界面（默认开启）")
-	cmd.Flags().BoolVar(&opts.noTUI, "no-tui", false, "禁用 TUI，使用一次性输出模式")
+	cmd.Flags().IntVar(&opts.maxHops, "max-hops", 30, i18n.T("cmd.flag.maxHops"))
+	cmd.Flags().IntVar(&opts.count, "count", 10, i18n.T("cmd.flag.count"))
+	cmd.Flags().DurationVar(&opts.interval, "interval", time.Second, i18n.T("cmd.flag.interval"))
+	cmd.Flags().DurationVar(&opts.timeout, "timeout", time.Second, i18n.T("cmd.flag.timeout"))
+	cmd.Flags().StringVar(&opts.protocol, "protocol", string(mtr.ProtocolICMP), i18n.T("cmd.flag.protocol"))
+	cmd.Flags().IntVar(&opts.ipVersion, "ip-version", 4, i18n.T("cmd.flag.ipVersion"))
+	cmd.Flags().BoolVar(&opts.noDNS, "no-dns", false, i18n.T("cmd.flag.noDNS"))
+	cmd.Flags().StringVar(&opts.geoip, "geoip", "cip", i18n.T("cmd.flag.geoip"))
+	cmd.Flags().StringVar(&opts.ip2rDB, "ip2region-db", "data/ip2region.xdb", i18n.T("cmd.flag.ip2regionDB"))
+	cmd.Flags().StringVar(&opts.ip2rURL, "geoip-ip2region-url", "", i18n.T("cmd.flag.ip2regionURL"))
+	cmd.Flags().BoolVar(&opts.autoDLGeo, "geoip-auto-download", true, i18n.T("cmd.flag.autoDLGeo"))
+	cmd.Flags().BoolVar(&opts.noGeoIP, "no-geoip", false, i18n.T("cmd.flag.noGeoIP"))
+	cmd.Flags().BoolVar(&opts.json, "json", false, i18n.T("cmd.flag.json"))
+	cmd.Flags().BoolVar(&opts.tui, "tui", true, i18n.T("cmd.flag.tui"))
+	cmd.Flags().BoolVar(&opts.noTUI, "no-tui", false, i18n.T("cmd.flag.noTUI"))
 
 	return cmd
 }
 
 func renderText(s *mtr.Snapshot) error {
 	if s == nil {
-		return errors.New("空结果")
+		return errors.New(i18n.T("err.emptyResult"))
 	}
 
 	fmt.Printf("Target: %s (%s)  Protocol: %s  Rounds: %d\n\n", s.Target, s.TargetIP, s.Protocol, s.Count)

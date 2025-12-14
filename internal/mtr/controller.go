@@ -3,7 +3,6 @@ package mtr
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"sort"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hyqhyq3/mymtr/internal/geoip"
+	"github.com/hyqhyq3/mymtr/internal/i18n"
 )
 
 type Controller struct {
@@ -25,13 +25,13 @@ type Controller struct {
 
 func NewController(cfg *Config, prober Prober, resolver geoip.GeoResolver) (*Controller, error) {
 	if cfg == nil {
-		return nil, errors.New("cfg 不能为空")
+		return nil, errors.New(i18n.T("err.cfgEmpty"))
 	}
 	if prober == nil {
-		return nil, errors.New("prober 不能为空")
+		return nil, errors.New(i18n.T("err.proberEmpty"))
 	}
 	if strings.TrimSpace(cfg.Target) == "" {
-		return nil, errors.New("target 不能为空")
+		return nil, errors.New(i18n.T("err.targetEmpty"))
 	}
 	if cfg.MaxHops <= 0 {
 		cfg.MaxHops = 30
@@ -43,7 +43,7 @@ func NewController(cfg *Config, prober Prober, resolver geoip.GeoResolver) (*Con
 		cfg.Interval = time.Second
 	}
 	if cfg.IPVersion != 4 && cfg.IPVersion != 6 {
-		return nil, fmt.Errorf("ip-version 仅支持 4/6，收到：%d", cfg.IPVersion)
+		return nil, errors.New(i18n.Tf("err.ipVersionInvalid", map[string]interface{}{"Version": cfg.IPVersion}))
 	}
 	if cfg.Protocol == "" {
 		cfg.Protocol = ProtocolICMP
@@ -202,14 +202,14 @@ func (c *Controller) emit(e Event) {
 func resolveTargetIP(ctx context.Context, target string, ipVersion int) (net.IP, error) {
 	ipAddr, err := net.DefaultResolver.LookupIPAddr(ctx, target)
 	if err != nil {
-		return nil, fmt.Errorf("解析目标失败：%w", err)
+		return nil, errors.New(i18n.Tf("err.resolveTarget", map[string]interface{}{"Error": err.Error()}))
 	}
 	for _, a := range ipAddr {
 		if (ipVersion == 4 && a.IP.To4() != nil) || (ipVersion == 6 && a.IP.To4() == nil && a.IP.To16() != nil) {
 			return a.IP, nil
 		}
 	}
-	return nil, fmt.Errorf("未找到 IPv%d 地址：%s", ipVersion, target)
+	return nil, errors.New(i18n.Tf("err.ipNotFound", map[string]interface{}{"Version": ipVersion, "Target": target}))
 }
 
 func reverseDNS(ctx context.Context, ip net.IP) string {

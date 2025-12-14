@@ -1,0 +1,130 @@
+# 中文翻译
+
+# CLI 命令描述
+[cmd.short]
+other = "带 IP 地理位置解析的网络诊断工具（MTR 风格）"
+
+# CLI flag 描述
+[cmd.flag.maxHops]
+other = "最大跳数"
+
+[cmd.flag.count]
+other = "探测轮数（0=无限，CLI 模式建议设置为正数）"
+
+[cmd.flag.interval]
+other = "每轮探测间隔"
+
+[cmd.flag.timeout]
+other = "单次探测超时"
+
+[cmd.flag.protocol]
+other = "探测协议：icmp/udp"
+
+[cmd.flag.ipVersion]
+other = "IP 版本：4/6"
+
+[cmd.flag.noDNS]
+other = "禁用反向 DNS"
+
+[cmd.flag.geoip]
+other = "IP 地理位置数据源：cip/ip2region/off"
+
+[cmd.flag.ip2regionDB]
+other = "ip2region 数据库路径（当 --geoip=ip2region 时使用）"
+
+[cmd.flag.ip2regionURL]
+other = "自定义 ip2region 数据库下载地址（默认自动选择官方源）"
+
+[cmd.flag.autoDLGeo]
+other = "当使用 ip2region 且数据库缺失时自动下载"
+
+[cmd.flag.noGeoIP]
+other = "禁用 IP 地理位置解析"
+
+[cmd.flag.json]
+other = "输出 JSON"
+
+[cmd.flag.tui]
+other = "启用 TUI 实时界面（默认开启）"
+
+[cmd.flag.noTUI]
+other = "禁用 TUI，使用一次性输出模式"
+
+# CLI 错误
+[err.emptyResult]
+other = "空结果"
+
+# TUI 消息
+[tui.starting]
+other = "启动中... (q 退出)"
+
+[tui.help]
+other = "按 p 暂停/继续，按 q/esc/ctrl+c 退出"
+
+[tui.paused]
+other = "已暂停"
+
+[tui.done]
+other = "完成"
+
+# MTR controller 错误
+[err.cfgEmpty]
+other = "cfg 不能为空"
+
+[err.proberEmpty]
+other = "prober 不能为空"
+
+[err.targetEmpty]
+other = "target 不能为空"
+
+[err.ipVersionInvalid]
+other = "ip-version 仅支持 4/6，收到：{{.Version}}"
+
+[err.resolveTarget]
+other = "解析目标失败：{{.Error}}"
+
+[err.ipNotFound]
+other = "未找到 IPv{{.Version}} 地址：{{.Target}}"
+
+# ip2region 消息
+[geoip.ip2region.pathEmpty]
+other = "ip2region db 路径为空（请设置 --ip2region-db）"
+
+[geoip.ip2region.pathIsDir]
+other = "ip2region db 路径应为文件：{{.Path}}"
+
+[geoip.ip2region.unavailable]
+other = "ip2region db 不可用：{{.Error}}"
+
+[geoip.ip2region.notExist]
+other = "ip2region db 不存在：{{.Path}}（可启用 --geoip-auto-download 自动下载，或提供 --geoip-ip2region-url）"
+
+[geoip.ip2region.downloadFailed]
+other = "自动下载 ip2region db 失败：{{.Error}}"
+
+[geoip.ip2region.mkdirFailed]
+other = "创建目录失败：{{.Error}}"
+
+[geoip.ip2region.allSourcesFailed]
+other = "下载 ip2region db 失败，已尝试：{{.Errors}}"
+
+[geoip.ip2region.statusCode]
+other = "状态码：{{.Code}}"
+
+[geoip.ip2region.downloading]
+other = "下载 ip2region：{{.Source}} [{{.Status}}]"
+
+[geoip.ip2region.timeout]
+other = "下载 ip2region：{{.Source}} 超过 {{.Duration}} 无进度，任务已中断"
+
+[geoip.ip2region.openFailed]
+other = "打开 ip2region db 失败：{{.Error}}"
+
+[geoip.ip2region.verifyFailed]
+other = "ip2region db 校验失败：{{.Error}}"
+
+[geoip.ip2region.headerFailed]
+other = "读取 ip2region header 失败：{{.Error}}"
+
+[geoip.ip2region.versionFailed]
+other = "解析 ip2region 版本失败：{{.Error}}"
